@@ -23,7 +23,7 @@ docker run -d -p 8834:8834 --name nessus nessus
 
 ```
 docker exec -it nessus bash
-python install.py
+python install.py update
 sh run.sh
 ```
 
