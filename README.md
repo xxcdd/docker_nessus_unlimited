@@ -34,3 +34,7 @@ sh run.sh
 https://github.com/0xa-saline/Nessus_update
 
 https://zhengshaoshaolin.blog.csdn.net/article/details/109488655
+
+## notice
+
+因为Nessus官网经常修改插件下载api，所以每隔一段时间自动化脚本会失效
