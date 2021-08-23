@@ -74,7 +74,7 @@ def get_plugin():
         "Sec-Fetch-Dest": "document",
         "Accept-Language": "zh-CN,zh;q=0.9,es;q=0.8,fr;q=0.7,vi;q=0.6"
     }
-    # proxies = {'http':'http://127.0.0.1:8080','https':'http://127.0.0.1:8080'}
+    # proxies = {'http': 'http://127.0.0.1:8080', 'https': 'http://127.0.0.1:8080'}
     proxies = {}
 
     mailx = str(str_count(9).lower())
@@ -82,38 +82,38 @@ def get_plugin():
 
     email = mailx + '@getnada.com'
     print ("生成的Email地址: {mail}".format(mail=email))
-    regurl = "https://zh-cn.tenable.com/products/nessus/nessus-essentials?tns_redirect=true"
-    print ("开始获取Nessus注册相关的表单")
-    tkn = ""
+
+    comurl = "https://www.tenable.com/evaluations/api/v1/nessus-essentials"
+    # params = {"first_name": str(str_count(9).lower()), "last_name": str(str_count(9).lower()), "email": email,
+    #           "country": "IN", "Accept": "Agree",
+    #           "robot": "human", "type": "homefeed", "token": tkn, "submit": "Register"}
+    params = '{"first_name":"%s","last_name":"%s","email":"%s","phone":"","code":"","country":"CN","region":"","zip":"","title":"","company":"","consentOptIn":true,"essentialsOptIn":true,"pid":"","utm_source":"","utm_campaign":"","utm_medium":"","utm_content":"","utm_promoter":"","utm_term":"","alert_email":"","_mkto_trk":"","mkt_tok":"","queryParameters":"utm_promoter=&utm_source=&utm_medium=&utm_campaign=&utm_content=&utm_term=&pid=&lookbook=&product_eval=essentials","referrer":"https://zh-cn.tenable.com/products/nessus/nessus-essentials?tns_redirect=true?utm_promoter=&utm_source=&utm_medium=&utm_campaign=&utm_content=&utm_term=&pid=&lookbook=&product_eval=essentials","lookbook":"","apps":["essentials"],"companySize":"","preferredSiteId":"","tempProductInterest":"Nessus Essentials","partnerId":""}' % (
+    str(str_count(9).lower()), str(str_count(9).upper()), email)
     try:
-        ht = requests.get(regurl, headers=headers, verify=False, proxies=proxies, timeout=600)
-        bs = BeautifulSoup(ht.text, 'html.parser')
-        for link in bs.findAll("input", {"name": "token"}):
-            if 'name' in link.attrs:
-                tkn = link.attrs['value']
-            else:
-                print("没有在当前页面找到token")
-    except Exception as e:
-        print '[get token] {}'.format(e.message)
-        pass
-    print ("获取到Nessus注册token为\t{token}".format(token=tkn))
-    if not tkn:
-        print ("fail, please check")
-        return
-    comurl = "https://www.tenable.com/products/nessus/nessus-essentials"
-    params = {"first_name": str(str_count(9).lower()), "last_name": str(str_count(9).lower()), "email": email,
-              "country": "IN", "Accept": "Agree",
-              "robot": "human", "type": "homefeed", "token": tkn, "submit": "Register"}
-    try:
-        r = requests.post(comurl, headers=headers, data=params, verify=False, proxies=proxies, timeout=600)
+        json_headers = {
+            "Connection": "close",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-User": "?1",
+            "Sec-Fetch-Dest": "document",
+            "Content-Type": "application/json"
+        }
+        r = requests.post(comurl, headers=json_headers, data=params, verify=False, proxies=proxies, timeout=600)
+        if '"message":"Success"' in r.content:
+            print ("注册成功，等待到邮箱 {mail} 去获取相关的信息".format(mail=email))
+        else:
+            print ("error can not get lic")
+            return
     except Exception as e:
         print '[reg] {}'.format(e.message)
         pass
     all = mailx + "@" + domain
-    print ("注册成功，等待到邮箱 {mail} 去获取相关的信息".format(mail=all))
+
     GET_INBOX = 'https://getnada.com/api/v1/inboxes/'
     boxurl = GET_INBOX + all
-    sleep = 15
+    sleep = 30
     print ("需要等待一段时间({sleep}秒)，等待邮箱收信有一定的延迟".format(sleep=sleep))
 
     time.sleep(sleep)
@@ -126,7 +126,6 @@ def get_plugin():
         pass
 
     GET_MESSAGE = 'https://getnada.com/api/v1/messages/html/'
-    activ_code = ''
     try:
         r = requests.get(GET_MESSAGE + uid, headers=headers, proxies=proxies, timeout=600, verify=False)
         # text = r.json()['html']
@@ -137,7 +136,7 @@ def get_plugin():
     except Exception as e:
         print '[get message] {}'.format(e.message)
         pass
-
+    # challenge_code = "b54b12537fb72fadad4cd9a5610ebe546329f9d6"
     try:
         output = commands.getstatusoutput('/opt/nessus/sbin/nessuscli fetch --challenge')
         code = re.findall('Challenge code: (\w+)\n', output[1])
@@ -154,9 +153,6 @@ def get_plugin():
                          verify=False)
     url_link = re.findall('<a href="(.*?)" target="_blank">', resp.content)
     for pre_url in url_link:
-        # if "mkconfig.php" in pre_url:
-        #     url = "https://plugins.nessus.org/v2/" + pre_url
-        #     file_name = "nessus.license"
         if "all-2.0.tar.gz" in pre_url:
             url = "https://plugins.nessus.org" + pre_url
             file_name = "all-2.0.tar.gz"
